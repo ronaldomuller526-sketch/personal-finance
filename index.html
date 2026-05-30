@@ -2,7 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1D9E75">
 <title>Finance Pessoal</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
@@ -140,11 +144,72 @@ tr:hover td { background: var(--bg); }
 .meta-btn:hover { border-color: var(--green); color: var(--green); }
 .meta-btn.del:hover { border-color: var(--red); color: var(--red); }
 @media(max-width:768px) {
-  .cards-grid { grid-template-columns: 1fr 1fr; }
+  /* LAYOUT */
+  .main { padding: .75rem; }
+  .header { padding: 0 .75rem; height: auto; min-height: 56px; flex-wrap: wrap; gap: .5rem; padding-top: .5rem; padding-bottom: .5rem; }
+  .header-right { gap: .5rem; flex-wrap: wrap; }
+  .logo { font-size: .9rem; }
+
+  /* HOME */
+  .home-card { padding: 1.5rem 1rem; }
+  .profile-grid { grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .profile-card { padding: 1rem .75rem; }
+  .profile-icon { font-size: 1.5rem; }
+
+  /* CARDS */
+  .cards-grid { grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .card { padding: 1rem; }
+  .card .value { font-size: 1.1rem; }
+
+  /* GRID */
   .two-col { grid-template-columns: 1fr; }
-  .profile-grid { grid-template-columns: 1fr; }
-  .main { padding: 1rem; }
-  .header { padding: 0 1rem; }
+
+  /* TABS — vira scroll horizontal */
+  .nav-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; white-space: nowrap; display: flex; flex-wrap: nowrap; padding: .2rem; gap: .15rem; }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: .45rem .7rem; font-size: .75rem; flex-shrink: 0; }
+
+  /* HEADER seletor de mês e botão */
+  .month-sel { font-size: .8rem; padding: .3rem .5rem; }
+  .btn { font-size: .78rem; padding: .4rem .7rem; }
+
+  /* TABELA — scroll horizontal */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 480px; }
+  th, td { padding: .45rem .6rem; font-size: .78rem; }
+
+  /* FILTERS */
+  .filters { flex-direction: column; gap: .4rem; }
+  .filter-sel { width: 100%; font-size: .8rem; }
+
+  /* MODAL */
+  .modal { margin: .75rem; max-height: 92vh; border-radius: var(--r); }
+  .form-row { grid-template-columns: 1fr; gap: .5rem; }
+
+  /* METAS */
+  .metas-grid { grid-template-columns: 1fr; }
+
+  /* RECORRENTES */
+  .rec-grid { grid-template-columns: 1fr 1fr; gap: .6rem; }
+
+  /* COMPARE */
+  .compare-grid { grid-template-columns: 1fr 1fr; }
+
+  /* RESP BREAKDOWN */
+  .resp-breakdown { grid-template-columns: 1fr; gap: .5rem; }
+
+  /* CHART menor no mobile */
+  #pieChart { height: 160px !important; }
+}
+
+@media(max-width:420px) {
+  .cards-grid { grid-template-columns: 1fr 1fr; }
+  .profile-grid { grid-template-columns: 1fr 1fr; }
+  .rec-grid { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .header-right .btn:not(#btnNovo) { display: none; }
+  /* Botão início vira ícone */
+  #btnInicio::before { content: "←"; }
 }
 </style>
 </head>
@@ -181,7 +246,7 @@ tr:hover td { background: var(--bg); }
     <div class="header-right">
       <select class="month-sel" id="monthSel" onchange="onMonthChange()"></select>
       <button class="btn btn-green" id="btnNovo" onclick="openModal()">+ Novo lançamento</button>
-      <button class="btn btn-ghost" onclick="goHome()">← Início</button>
+      <button class="btn btn-ghost" id="btnInicio" onclick="goHome()">← Início</button>
     </div>
   </div>
   <div class="main">
@@ -204,7 +269,7 @@ tr:hover td { background: var(--bg); }
     <!-- TRANSAÇÕES -->
     <div id="page-transacoes" class="page">
       <div class="chart-card">
-        <div class="chart-header" style="flex-wrap:wrap;gap:.75rem">
+        <div class="chart-header" style="flex-wrap:wrap;gap:.75rem;align-items:flex-start">
           <span class="chart-title">Todas as transações</span>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
             <input class="filter-sel" id="ftBusca" type="text" placeholder="🔍 Buscar descrição..." oninput="renderTx()" style="min-width:180px">

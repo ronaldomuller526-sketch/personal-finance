@@ -282,7 +282,6 @@ tr:last-child td { border-bottom: none; }
   <div class="header">
     <div class="logo" id="headerLogo">💰 <span class="accent">Finance</span></div>
     <div class="header-right">
-      <select class="month-sel" id="monthSel" onchange="onMonthChange()"></select>
       <button class="btn btn-ghost" id="btnDark" onclick="toggleDark()" title="Modo escuro" style="padding:.5rem .6rem;font-size:1rem">🌙</button>
       <button class="btn btn-green" id="btnNovo" onclick="openModal()">+ Novo lançamento</button>
       <button class="btn btn-ghost" id="btnInicio" onclick="goHome()">← Início</button>
@@ -309,9 +308,12 @@ tr:last-child td { border-bottom: none; }
     <div id="page-transacoes" class="page">
       <div class="chart-card">
         <div class="chart-header" style="flex-wrap:wrap;gap:.75rem;align-items:flex-start">
-          <span class="chart-title">Todas as transações</span>
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+            <span class="chart-title">Transações</span>
+            <select class="month-sel" id="monthSel" onchange="onMonthChange()" style="font-size:.8rem;padding:.3rem .6rem"></select>
+          </div>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-            <input class="filter-sel" id="ftBusca" type="text" placeholder="🔍 Buscar descrição..." oninput="renderTx()" style="min-width:180px">
+            <input class="filter-sel" id="ftBusca" type="text" placeholder="🔍 Buscar..." oninput="renderTx()" style="min-width:150px">
             <select class="filter-sel" id="ftTipo" onchange="renderTx()">
               <option value="">Todos os tipos</option>
               <option>Despesa</option><option>Investimento</option><option>Receita</option>
@@ -791,9 +793,8 @@ function openPerfil(p) {
     document.getElementById('fRespGroup').style.display = isConj()?'':'none';
     document.getElementById('fObsGroup').style.display = isConj()?'':'none';
     const sel = document.getElementById('monthSel');
-    sel.innerHTML = MONTHS.map(m=>`<option ${m===currentMonth?'selected':''}>${m}</option>`).join('');
+    if (sel) sel.innerHTML = MONTHS.map(m=>`<option ${m===currentMonth?'selected':''}>${m}</option>`).join('');
     switchTab('dashboard', document.querySelector('.tab'));
-    loadMonth(currentMonth);
   });
 }
 
@@ -809,32 +810,53 @@ function onMonthChange() {
   loadMonth(currentMonth);
 }
 
+// ─── DASHBOARD ANUAL ──────────────────────────────────────────────────────────
+let allYearData = [];
+
+async function loadDashboardAnual() {
+  document.getElementById('summaryCards').innerHTML = '<div class="loading"><div class="spinner"></div> Carregando ano...</div>';
+  document.getElementById('chartsArea').innerHTML = '';
+  document.getElementById('respBreakdown').innerHTML = '';
+
+  allYearData = [];
+  const DB = isConj() ? DB_CONJUNTA : DB_PESSOAL;
+  for (const m of MONTHS) {
+    try {
+      const id = DB[m];
+      if (!id || id.includes('_ID')) continue;
+      const data = await fetchTransacoes(id);
+      allYearData.push(...data);
+    } catch {}
+  }
+  currentData = allYearData;
+  renderDashboard();
+}
+
 function switchTab(tabName, el) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active','purple'));
   if (el) { el.classList.add('active'); if(isConj()) el.classList.add('purple'); }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg = document.getElementById(`page-${tabName}`);
   if (pg) pg.classList.add('active');
-  const semMes = tabName==='metas' || tabName==='relatorio';
-  document.getElementById('monthSel').style.display = semMes ? 'none' : '';
-  document.getElementById('btnNovo').style.display  = semMes ? 'none' : '';
+  // Botão novo: esconde em metas/relatorio
+  const semNovo = tabName==='metas' || tabName==='relatorio';
+  document.getElementById('btnNovo').style.display = semNovo ? 'none' : '';
+  if (tabName==='dashboard')   loadDashboardAnual();
+  if (tabName==='transacoes')  loadMonth(currentMonth);
   if (tabName==='recorrentes') renderRecorrentes();
   if (tabName==='comparativo') renderComparativo();
-  if (tabName==='metas') renderMetas();
-  if (tabName==='relatorio') renderRelatorio();
+  if (tabName==='metas')       renderMetas();
+  if (tabName==='relatorio')   renderRelatorio();
 }
 
 // ─── LOAD MÊS ─────────────────────────────────────────────────────────────────
 async function loadMonth(month) {
-  document.getElementById('summaryCards').innerHTML = `<div class="loading"><div class="spinner"></div> Carregando ${month}...</div>`;
-  document.getElementById('chartsArea').innerHTML = '';
   currentDbId = await findMonthDb(month);
   if (!currentDbId || currentDbId.includes('_ID')) {
-    document.getElementById('summaryCards').innerHTML = '<div class="empty">Database não encontrada para este mês.</div>';
+    document.getElementById('txTable').innerHTML = '<div class="empty">Database não encontrada para este mês.</div>';
     return;
   }
-  [currentData] = await Promise.all([fetchTransacoes(currentDbId), loadPrevMonth()]);
-  renderDashboard();
+  currentData = await fetchTransacoes(currentDbId);
   renderTx();
 }
 
@@ -888,34 +910,31 @@ function renderDashboard() {
   const varI = varPct(invest, prev.invest);
   const varSaldo = prev.saldo !== 0 ? varPct(saldo, Math.abs(prev.saldo)) : null;
 
+  const ano = new Date().getFullYear();
   document.getElementById('summaryCards').innerHTML = `
     <div class="card">
       <div class="indicator" style="background:var(--green)"></div>
-      <div class="label">Entradas</div>
+      <div class="label">Entradas ${ano}</div>
       <div class="value" style="color:var(--green-dark)">${fmt(entradas)}</div>
       <div class="sub">${currentData.filter(d=>d.tipo==='Receita').length} registros</div>
-      <div style="margin-top:.4rem">${varBadge(varE)}</div>
     </div>
     <div class="card">
       <div class="indicator" style="background:var(--red)"></div>
-      <div class="label">Saídas</div>
+      <div class="label">Saídas ${ano}</div>
       <div class="value" style="color:var(--red)">${fmt(saidas)}</div>
       <div class="sub">${currentData.filter(d=>d.tipo==='Despesa').length} registros</div>
-      <div style="margin-top:.4rem">${varBadge(varS, true)}</div>
     </div>
     <div class="card">
       <div class="indicator" style="background:var(--blue)"></div>
-      <div class="label">Investimentos</div>
+      <div class="label">Investido ${ano}</div>
       <div class="value" style="color:var(--blue-dark)">${fmt(invest)}</div>
       <div class="sub">${currentData.filter(d=>d.tipo==='Investimento').length} registros</div>
-      <div style="margin-top:.4rem">${varBadge(varI)}</div>
     </div>
     <div class="card">
       <div class="indicator" style="background:var(--gray)"></div>
-      <div class="label">Saldo</div>
+      <div class="label">Saldo ${ano}</div>
       <div class="value" style="color:${saldo>=0?'var(--green-dark)':'var(--red)'}">${fmt(saldo)}</div>
       <div class="sub">${saldo>=0?'Positivo':'Negativo'}</div>
-      <div style="margin-top:.4rem">${varBadge(varSaldo)}</div>
     </div>`;
   const catTotais={};
   currentData.filter(d=>d.tipo==='Despesa').forEach(d=>{catTotais[d.cat]=(catTotais[d.cat]||0)+d.valor});
@@ -1350,7 +1369,7 @@ async function renderRelatorio() {
 let tipoRecorrencia = 'unico';
 
 function openModal() {
-  document.getElementById('modalTitle').textContent = `Novo lançamento — ${currentMonth}`;
+  document.getElementById('modalTitle').textContent = `Novo lançamento — ${currentMonth}`; // mês das transações
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('fDataGasto').value = today;
   document.getElementById('fDataPag').value   = today;

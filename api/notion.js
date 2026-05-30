@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Notion-Version');
@@ -8,15 +8,20 @@ export default async function handler(req, res) {
   const path = req.query.path || '';
   const url = `https://api.notion.com/v1/${path}`;
 
+  // Rotas que exigem POST mesmo quando chamadas via GET do browser
+  const forcePost = path.endsWith('/query') || path === 'search';
+  const method = forcePost ? 'POST' : req.method;
+  const body = method !== 'GET' ? JSON.stringify(req.body || {}) : undefined;
+
   try {
     const response = await fetch(url, {
-      method: req.method,
+      method,
       headers: {
         'Authorization': `Bearer ${NOTION_TOKEN}`,
         'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json',
       },
-      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+      body,
     });
     const data = await response.json();
     return res.status(response.status).json(data);

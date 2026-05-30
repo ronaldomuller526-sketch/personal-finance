@@ -204,9 +204,10 @@ tr:hover td { background: var(--bg); }
     <!-- TRANSAÇÕES -->
     <div id="page-transacoes" class="page">
       <div class="chart-card">
-        <div class="chart-header">
+        <div class="chart-header" style="flex-wrap:wrap;gap:.75rem">
           <span class="chart-title">Todas as transações</span>
-          <div class="filters">
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input class="filter-sel" id="ftBusca" type="text" placeholder="🔍 Buscar descrição..." oninput="renderTx()" style="min-width:180px">
             <select class="filter-sel" id="ftTipo" onchange="renderTx()">
               <option value="">Todos os tipos</option>
               <option>Despesa</option><option>Investimento</option><option>Receita</option>
@@ -215,8 +216,10 @@ tr:hover td { background: var(--bg); }
             <select class="filter-sel" id="ftResp" onchange="renderTx()" style="display:none">
               <option value="">Todos</option><option>Casal</option><option>Ronaldo</option><option>Nathália</option>
             </select>
+            <button class="filter-sel" onclick="limparFiltros()" style="cursor:pointer;background:var(--bg)">✕ Limpar</button>
           </div>
         </div>
+        <div id="txResumo" style="padding:.5rem .75rem;font-size:.78rem;color:var(--text-muted);border-bottom:1px solid var(--border)"></div>
         <div class="table-wrap" id="txTable"></div>
       </div>
     </div>
@@ -257,6 +260,109 @@ tr:hover td { background: var(--bg); }
       <div id="relatorioContent"><div class="loading"><div class="spinner"></div> Carregando relatório...</div></div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL EDITAR LANÇAMENTO -->
+<div class="overlay" id="editModalOverlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar lançamento</div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="eDesc" type="text">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="eValor" type="number" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="eTipo" onchange="updateEditCats()">
+          <option>Despesa</option><option>Investimento</option><option>Receita</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="eCat"></select>
+      </div>
+      <div class="form-group" id="eRespGroup" style="display:none">
+        <label class="form-label">Responsável</label>
+        <select class="form-select" id="eResp"><option>Casal</option><option>Ronaldo</option><option>Nathália</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data do gasto</label>
+        <input class="form-input" id="eDataGasto" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data pagamento</label>
+        <input class="form-input" id="eDataPag" type="date">
+      </div>
+    </div>
+    <div class="form-group" id="eObsGroup" style="display:none">
+      <label class="form-label">Observação</label>
+      <input class="form-input" id="eObs" type="text">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-save" id="btnSaveEdit" onclick="salvarEdicao()">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL EDITAR LANÇAMENTO -->
+<div class="overlay" id="editModalOverlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar lançamento</div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="eDesc" type="text">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="eValor" type="number" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="eTipo" onchange="updateEditCats()">
+          <option>Despesa</option><option>Investimento</option><option>Receita</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="eCat"></select>
+      </div>
+      <div class="form-group" id="eRespGroup" style="display:none">
+        <label class="form-label">Responsável</label>
+        <select class="form-select" id="eResp"><option>Casal</option><option>Ronaldo</option><option>Nathália</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data do gasto</label>
+        <input class="form-input" id="eDataGasto" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data pagamento</label>
+        <input class="form-input" id="eDataPag" type="date">
+      </div>
+    </div>
+    <div class="form-group" id="eObsGroup" style="display:none">
+      <label class="form-label">Observação</label>
+      <input class="form-input" id="eObs" type="text">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-save" id="btnSaveEdit" onclick="salvarEdicao()">Salvar alterações</button>
+    </div>
   </div>
 </div>
 
@@ -593,29 +699,154 @@ function renderDashboard() {
 }
 
 // ─── TRANSAÇÕES ───────────────────────────────────────────────────────────────
+// ─── TRANSAÇÕES ───────────────────────────────────────────────────────────────
+let editingId = null;
+
+function limparFiltros() {
+  document.getElementById('ftBusca').value = '';
+  document.getElementById('ftTipo').value  = '';
+  document.getElementById('ftCat').value   = '';
+  document.getElementById('ftResp').value  = '';
+  renderTx();
+}
+
 function renderTx() {
-  const tipo=document.getElementById('ftTipo').value;
-  const cat=document.getElementById('ftCat').value;
-  const resp=document.getElementById('ftResp').value;
-  const cats=[...new Set(currentData.map(d=>d.cat))].filter(Boolean);
-  const ftCat=document.getElementById('ftCat');
-  const cur=ftCat.value;
-  ftCat.innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option ${c===cur?'selected':''}>${c}</option>`).join('');
-  let data=[...currentData];
-  if(tipo) data=data.filter(d=>d.tipo===tipo);
-  if(cat)  data=data.filter(d=>d.cat===cat);
-  if(resp) data=data.filter(d=>d.responsavel===resp);
-  data.sort((a,b)=>(b.dataGasto||b.dataPag||'').localeCompare(a.dataGasto||a.dataPag||''));
-  if(!data.length){document.getElementById('txTable').innerHTML='<div class="empty">Nenhuma transação encontrada</div>';return;}
-  const rows=data.map(d=>{
-    const grupo=GRUPO()[d.cat]||'azul';
-    const vcls=d.tipo==='Receita'?'val-pos':d.tipo==='Investimento'?'val-inv':'val-neg';
-    const sinal=d.tipo==='Receita'?'+':'-';
-    const ds=d.dataGasto?new Date(d.dataGasto+'T00:00:00').toLocaleDateString('pt-BR'):d.dataPag?new Date(d.dataPag+'T00:00:00').toLocaleDateString('pt-BR'):'-';
-    const rcls=d.responsavel==='Ronaldo'?'badge-ronaldo':d.responsavel==='Nathália'?'badge-nathalia':'badge-casal';
-    return `<tr><td>${ds}</td><td style="font-weight:600">${d.desc||'-'}</td><td><span class="badge badge-${grupo}">${d.cat||'-'}</span></td>${isConj()?`<td>${d.responsavel?`<span class="badge ${rcls}">${d.responsavel}</span>`:''}</td>`:''}<td style="text-align:right" class="${vcls}">${sinal}${fmt(d.valor)}</td></tr>`;
+  const busca = (document.getElementById('ftBusca').value||'').toLowerCase().trim();
+  const tipo  = document.getElementById('ftTipo').value;
+  const cat   = document.getElementById('ftCat').value;
+  const resp  = document.getElementById('ftResp').value;
+
+  // Atualiza categorias no filtro
+  const cats = [...new Set(currentData.map(d=>d.cat))].filter(Boolean);
+  const ftCat = document.getElementById('ftCat');
+  const cur = ftCat.value;
+  ftCat.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c=>`<option ${c===cur?'selected':''}>${c}</option>`).join('');
+
+  let data = [...currentData];
+  if (busca) data = data.filter(d => d.desc.toLowerCase().includes(busca));
+  if (tipo)  data = data.filter(d => d.tipo === tipo);
+  if (cat)   data = data.filter(d => d.cat  === cat);
+  if (resp)  data = data.filter(d => d.responsavel === resp);
+  data.sort((a,b) => (b.dataGasto||b.dataPag||'').localeCompare(a.dataGasto||a.dataPag||''));
+
+  // Totalizador
+  const totalFiltrado = data.reduce((s,d) => d.tipo==='Receita' ? s+d.valor : s-d.valor, 0);
+  const resumoEl = document.getElementById('txResumo');
+  if (resumoEl) {
+    resumoEl.innerHTML = data.length
+      ? `${data.length} registro(s) · Total: <strong style="color:${totalFiltrado>=0?'var(--green-dark)':'var(--red)'}">${totalFiltrado>=0?'+':''}${fmt(totalFiltrado)}</strong>`
+      : '';
+  }
+
+  if (!data.length) {
+    document.getElementById('txTable').innerHTML = '<div class="empty">Nenhuma transação encontrada</div>';
+    return;
+  }
+
+  const rows = data.map(d => {
+    const grupo = GRUPO()[d.cat] || 'azul';
+    const vcls  = d.tipo==='Receita' ? 'val-pos' : d.tipo==='Investimento' ? 'val-inv' : 'val-neg';
+    const sinal = d.tipo==='Receita' ? '+' : '-';
+    const ds    = d.dataGasto ? new Date(d.dataGasto+'T00:00:00').toLocaleDateString('pt-BR')
+                : d.dataPag   ? new Date(d.dataPag+'T00:00:00').toLocaleDateString('pt-BR') : '-';
+    const rcls  = d.responsavel==='Ronaldo' ? 'badge-ronaldo' : d.responsavel==='Nathália' ? 'badge-nathalia' : 'badge-casal';
+    // Highlight de busca
+    const descHL = busca
+      ? d.desc.replace(new RegExp(`(${busca})`, 'gi'), '<mark style="background:#FFF3CD;border-radius:2px">$1</mark>')
+      : d.desc;
+    return `<tr>
+      <td>${ds}</td>
+      <td style="font-weight:600">${descHL||'-'}</td>
+      <td><span class="badge badge-${grupo}">${d.cat||'-'}</span></td>
+      ${isConj()?`<td>${d.responsavel?`<span class="badge ${rcls}">${d.responsavel}</span>`:''}</td>`:''}
+      <td style="text-align:right" class="${vcls}">${sinal}${fmt(d.valor)}</td>
+      <td style="text-align:center;width:40px">
+        <button onclick="openEditModal('${d.id}')" title="Editar" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:.2rem;border-radius:4px;transition:background .15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">✏️</button>
+      </td>
+    </tr>`;
   }).join('');
-  document.getElementById('txTable').innerHTML=`<table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th>${isConj()?'<th>Responsável</th>':''}<th style="text-align:right">Valor</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+  document.getElementById('txTable').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Data</th><th>Descrição</th><th>Categoria</th>
+        ${isConj()?'<th>Responsável</th>':''}
+        <th style="text-align:right">Valor</th>
+        <th style="text-align:center">Ação</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ─── EDITAR LANÇAMENTO ────────────────────────────────────────────────────────
+function openEditModal(pageId) {
+  const d = currentData.find(x => x.id === pageId);
+  if (!d) return;
+  editingId = pageId;
+  document.getElementById('eDesc').value      = d.desc;
+  document.getElementById('eValor').value     = d.valor;
+  document.getElementById('eTipo').value      = d.tipo;
+  document.getElementById('eDataGasto').value = d.dataGasto || '';
+  document.getElementById('eDataPag').value   = d.dataPag   || '';
+  document.getElementById('eRespGroup').style.display = isConj() ? '' : 'none';
+  document.getElementById('eObsGroup').style.display  = isConj() ? '' : 'none';
+  if (isConj()) {
+    document.getElementById('eResp').value = d.responsavel || 'Casal';
+    document.getElementById('eObs').value  = d.observacao  || '';
+  }
+  updateEditCats(d.cat);
+  document.getElementById('editModalOverlay').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('editModalOverlay').classList.remove('open');
+  editingId = null;
+}
+
+function updateEditCats(selectedCat) {
+  const tipo = document.getElementById('eTipo').value;
+  const cats = CATS()[tipo] || [];
+  document.getElementById('eCat').innerHTML = cats.map(c=>`<option ${c===selectedCat?'selected':''}>${c}</option>`).join('');
+}
+
+async function salvarEdicao() {
+  if (!editingId) return;
+  const desc  = document.getElementById('eDesc').value.trim();
+  const valor = parseFloat(document.getElementById('eValor').value);
+  const tipo  = document.getElementById('eTipo').value;
+  const cat   = document.getElementById('eCat').value;
+  const dg    = document.getElementById('eDataGasto').value;
+  const dp    = document.getElementById('eDataPag').value;
+  const resp  = document.getElementById('eResp').value;
+  const obs   = document.getElementById('eObs').value.trim();
+  if (!desc || !valor) return;
+
+  const btn = document.getElementById('btnSaveEdit');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const props = {
+    'Descrição': {title:[{text:{content:desc}}]},
+    'Valor':     {number:valor},
+    'Tipo':      {select:{name:tipo}},
+    'Categoria': {select:{name:cat}},
+  };
+  if (dg) props[isConj()?'Data Gasto':'Data Gasto '] = {date:{start:dg}};
+  if (dp) props['Data Pagamento'] = {date:{start:dp}};
+  if (isConj()&&resp) props['Responsável'] = {select:{name:resp}};
+  if (isConj()&&obs)  props['Observação']  = {rich_text:[{text:{content:obs}}]};
+
+  try {
+    await fetch(`${API}?path=${encodeURIComponent('pages/'+editingId)}`, {
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({properties:props})
+    });
+    closeEditModal();
+    currentData = await fetchTransacoes(currentDbId);
+    renderDashboard(); renderTx();
+  } catch(e) { alert('Erro ao editar: '+e.message); }
+
+  btn.disabled = false; btn.textContent = 'Salvar alterações';
 }
 
 // ─── RECORRENTES ──────────────────────────────────────────────────────────────

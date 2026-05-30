@@ -131,6 +131,14 @@ tr:hover td { background: var(--bg); }
 .meta-pct { font-size: .75rem; color: var(--text-muted); }
 .resp-breakdown { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; text-align: center; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.cor-opt { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all .15s; }
+.rec-toggle { padding: .35rem .75rem; border-radius: var(--rs); border: 1px solid var(--border); background: var(--surface); font-family: var(--font); font-size: .78rem; cursor: pointer; color: var(--text-muted); transition: all .15s; }
+.rec-toggle.active { background: var(--green); color: #fff; border-color: var(--green); font-weight: 600; }
+.cor-opt.selected { border-color: var(--text); transform: scale(1.15); }
+.meta-actions { display: flex; gap: .5rem; margin-top: .75rem; }
+.meta-btn { flex: 1; padding: .4rem; border: 1px solid var(--border); border-radius: var(--rs); background: transparent; font-family: var(--font); font-size: .75rem; cursor: pointer; color: var(--text-muted); transition: all .15s; }
+.meta-btn:hover { border-color: var(--green); color: var(--green); }
+.meta-btn.del:hover { border-color: var(--red); color: var(--red); }
 @media(max-width:768px) {
   .cards-grid { grid-template-columns: 1fr 1fr; }
   .two-col { grid-template-columns: 1fr; }
@@ -236,9 +244,9 @@ tr:hover td { background: var(--bg); }
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
         <div>
           <h2 style="font-size:1.1rem;font-weight:700">Metas & Planejamento 2026</h2>
-          <p style="font-size:.825rem;color:var(--text-muted);margin-top:.25rem">Clique no valor atual para editar</p>
+          <p style="font-size:.825rem;color:var(--text-muted);margin-top:.25rem">Gerencie suas metas financeiras</p>
         </div>
-        <button class="btn btn-green" id="btnAddMeta" onclick="addMeta()">+ Nova meta</button>
+        <button class="btn btn-green" id="btnAddMeta" onclick="openMetaModal()">+ Nova meta</button>
       </div>
       <div class="metas-grid" id="metasGrid"></div>
       <div class="chart-card" style="margin-top:1.5rem" id="metaResumo"></div>
@@ -249,6 +257,44 @@ tr:hover td { background: var(--bg); }
       <div id="relatorioContent"><div class="loading"><div class="spinner"></div> Carregando relatório...</div></div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL METAS -->
+<div class="overlay" id="metaModalOverlay" onclick="if(event.target===this)closeMetaModal()">
+  <div class="modal">
+    <div class="modal-title" id="metaModalTitle">Nova meta</div>
+    <div class="form-group">
+      <label class="form-label">Nome da meta</label>
+      <input class="form-input" id="mNome" type="text" placeholder="Ex: Reserva de emergência...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor da meta (R$)</label>
+        <input class="form-input" id="mMeta" type="number" step="100" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor atual (R$)</label>
+        <input class="form-input" id="mAtual" type="number" step="100" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="corPicker">
+        <div class="cor-opt" data-cor="#1D9E75" style="background:#1D9E75" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#378ADD" style="background:#378ADD" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#533AB7" style="background:#533AB7" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#BA7517" style="background:#BA7517" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#E24B4A" style="background:#E24B4A" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#D4537E" style="background:#D4537E" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#D85A30" style="background:#D85A30" onclick="selectCor(this)"></div>
+        <div class="cor-opt" data-cor="#085041" style="background:#085041" onclick="selectCor(this)"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeMetaModal()">Cancelar</button>
+      <button class="btn-save" id="btnSaveMeta" onclick="saveMeta()">Salvar meta</button>
+    </div>
   </div>
 </div>
 
@@ -296,6 +342,47 @@ tr:hover td { background: var(--bg); }
       <label class="form-label">Observação (opcional)</label>
       <input class="form-input" id="fObs" type="text" placeholder="Nota adicional...">
     </div>
+
+    <!-- RECORRÊNCIA -->
+    <div style="border-top:1px solid var(--border);margin-top:.75rem;padding-top:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <div>
+          <div style="font-size:.8rem;font-weight:600">Tipo de lançamento</div>
+          <div style="font-size:.72rem;color:var(--text-muted)">Gasto único ou recorrente?</div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button id="btnUnico" class="rec-toggle active" onclick="setRecorrencia('unico')">🎯 Único</button>
+          <button id="btnRec" class="rec-toggle" onclick="setRecorrencia('recorrente')">🔄 Recorrente</button>
+        </div>
+      </div>
+      <div id="recOpts" style="display:none;background:var(--bg);border-radius:var(--rs);padding:1rem;display:none">
+        <div class="form-row" style="margin-bottom:.75rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Mês inicial</label>
+            <select class="form-select" id="fRecMesInicio"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Duração</label>
+            <select class="form-select" id="fRecDuracao" onchange="toggleMesFim()">
+              <option value="0">Sem prazo (todos os meses)</option>
+              <option value="3">3 meses</option>
+              <option value="6">6 meses</option>
+              <option value="12">12 meses</option>
+              <option value="18">18 meses</option>
+              <option value="24">24 meses</option>
+              <option value="36">36 meses</option>
+              <option value="custom">Definir número de parcelas</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" id="fParcGroup" style="display:none;margin-bottom:0">
+          <label class="form-label">Número de parcelas</label>
+          <input class="form-input" id="fParcelas" type="number" min="1" max="60" placeholder="Ex: 48">
+        </div>
+        <div id="recPreview" style="font-size:.78rem;color:var(--text-muted);margin-top:.5rem"></div>
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" id="btnSave" onclick="salvar()">Salvar no Notion</button>
@@ -533,7 +620,11 @@ function renderTx() {
 
 // ─── RECORRENTES ──────────────────────────────────────────────────────────────
 function renderRecorrentes() {
-  if(isConj()){document.getElementById('recGrid').innerHTML='<div class="empty">Gastos fixos conjuntos em breve.</div>';document.getElementById('recStatus').textContent='';return;}
+  if(isConj()){
+    document.getElementById('recGrid').innerHTML='<div class="empty" style="padding:2rem">A conta conjunta não possui gastos recorrentes cadastrados.<br>Use o botão <strong>+ Novo lançamento</strong> com a opção <strong>🔄 Recorrente</strong> para lançar em múltiplos meses de uma vez.</div>';
+    document.getElementById('recStatus').textContent='';
+    return;
+  }
   const nomes=currentData.map(d=>d.desc.toLowerCase());
   let ok=0,pend=0;
   document.getElementById('recGrid').innerHTML=RECORRENTES.map(r=>{
@@ -566,40 +657,94 @@ async function renderComparativo() {
 }
 
 // ─── METAS ────────────────────────────────────────────────────────────────────
+let metaEditIndex = null;
+let corSelecionada = '#1D9E75';
+
 function renderMetas() {
   const metas = getMetas();
-  document.getElementById('metasGrid').innerHTML=metas.map((m,i)=>{
-    const pct=Math.min((m.atual/m.meta)*100,100);
-    return `<div class="meta-card"><div class="meta-header"><div class="meta-dot" style="background:${m.cor}"></div><div class="meta-name">${m.nome}</div></div>
-    <div class="meta-values"><span>Meta: ${fmtInt(m.meta)}</span><span class="meta-atual" onclick="editMeta(${i})" title="Clique para editar">Atual: ${fmtInt(m.atual)}</span></div>
-    <div class="meta-bar-wrap"><div class="meta-bar" style="width:${pct.toFixed(0)}%;background:${m.cor}"></div></div>
-    <div class="meta-pct">${pct.toFixed(1)}% · Faltam ${fmtInt(Math.max(m.meta-m.atual,0))}</div></div>`;
-  }).join('');
-  const totM=metas.reduce((s,m)=>s+m.meta,0);
-  const totA=metas.reduce((s,m)=>s+m.atual,0);
-  document.getElementById('metaResumo').innerHTML=`
-    <div class="chart-header"><span class="chart-title">Resumo ${isConj()?'Conjunta':'Pessoal'}</span></div>
+  document.getElementById('btnAddMeta').className = `btn ${isConj()?'btn-purple':'btn-green'}`;
+  document.getElementById('metasGrid').innerHTML = metas.map((m,i) => {
+    const pct = Math.min((m.atual/m.meta)*100, 100);
+    return `<div class="meta-card">
+      <div class="meta-header"><div class="meta-dot" style="background:${m.cor}"></div><div class="meta-name">${m.nome}</div></div>
+      <div class="meta-values"><span>Meta: ${fmtInt(m.meta)}</span><span style="font-weight:600">Atual: ${fmtInt(m.atual)}</span></div>
+      <div class="meta-bar-wrap"><div class="meta-bar" style="width:${pct.toFixed(0)}%;background:${m.cor}"></div></div>
+      <div class="meta-pct">${pct.toFixed(1)}% concluído · Faltam ${fmtInt(Math.max(m.meta-m.atual,0))}</div>
+      <div class="meta-actions">
+        <button class="meta-btn" onclick="openMetaModal(${i})">✏️ Editar</button>
+        <button class="meta-btn del" onclick="deleteMeta(${i})">🗑️ Remover</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Nenhuma meta criada. Clique em "+ Nova meta" para começar.</div>';
+  const totM = metas.reduce((s,m)=>s+m.meta,0);
+  const totA = metas.reduce((s,m)=>s+m.atual,0);
+  document.getElementById('metaResumo').innerHTML = `
+    <div class="chart-header"><span class="chart-title">Resumo do progresso</span></div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center">
       <div><div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Total das metas</div><div style="font-size:1.3rem;font-weight:700">${fmtInt(totM)}</div></div>
       <div><div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Acumulado</div><div style="font-size:1.3rem;font-weight:700;color:var(--green-dark)">${fmtInt(totA)}</div></div>
-      <div><div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Progresso</div><div style="font-size:1.3rem;font-weight:700;color:var(--blue-dark)">${totM?(totA/totM*100).toFixed(1):0}%</div></div>
+      <div><div style="font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Progresso geral</div><div style="font-size:1.3rem;font-weight:700;color:var(--blue-dark)">${totM?(totA/totM*100).toFixed(1):0}%</div></div>
     </div>`;
 }
 
-function editMeta(i) {
-  const metas=getMetas();
-  const novo=prompt(`Valor atual de "${metas[i].nome}" (R$):`,metas[i].atual);
-  if(novo!==null&&!isNaN(parseFloat(novo))){metas[i].atual=parseFloat(novo);saveMetas();renderMetas();}
+function openMetaModal(idx = null) {
+  metaEditIndex = idx;
+  const metas = getMetas();
+  const isEdit = idx !== null;
+  document.getElementById('metaModalTitle').textContent = isEdit ? 'Editar meta' : 'Nova meta';
+  document.getElementById('btnSaveMeta').textContent = isEdit ? 'Salvar alterações' : 'Salvar meta';
+  if (isEdit) {
+    const m = metas[idx];
+    document.getElementById('mNome').value  = m.nome;
+    document.getElementById('mMeta').value  = m.meta;
+    document.getElementById('mAtual').value = m.atual;
+    corSelecionada = m.cor;
+  } else {
+    document.getElementById('mNome').value  = '';
+    document.getElementById('mMeta').value  = '';
+    document.getElementById('mAtual').value = '';
+    corSelecionada = '#1D9E75';
+  }
+  document.querySelectorAll('.cor-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.cor === corSelecionada);
+  });
+  document.getElementById('metaModalOverlay').classList.add('open');
 }
 
-function addMeta() {
-  const metas=getMetas();
-  const nome=prompt('Nome da meta:'); if(!nome) return;
-  const meta=parseFloat(prompt('Valor da meta (R$):')); if(!meta) return;
-  const cores=['#1D9E75','#378ADD','#533AB7','#BA7517','#E24B4A','#D4537E'];
-  metas.push({nome,meta,atual:0,cor:cores[metas.length%cores.length]});
-  saveMetas(); renderMetas();
+function closeMetaModal() { document.getElementById('metaModalOverlay').classList.remove('open'); }
+
+function selectCor(el) {
+  corSelecionada = el.dataset.cor;
+  document.querySelectorAll('.cor-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
 }
+
+function saveMeta() {
+  const nome  = document.getElementById('mNome').value.trim();
+  const meta  = parseFloat(document.getElementById('mMeta').value);
+  const atual = parseFloat(document.getElementById('mAtual').value) || 0;
+  if (!nome || !meta) { alert('Preencha nome e valor da meta.'); return; }
+  const metas = getMetas();
+  if (metaEditIndex !== null) {
+    metas[metaEditIndex] = { nome, meta, atual, cor: corSelecionada };
+  } else {
+    metas.push({ nome, meta, atual, cor: corSelecionada });
+  }
+  localStorage.setItem(`metas_${perfil}`, JSON.stringify(metas));
+  closeMetaModal();
+  renderMetas();
+}
+
+function deleteMeta(i) {
+  const metas = getMetas();
+  if (!confirm(`Remover a meta "${metas[i].nome}"?`)) return;
+  metas.splice(i, 1);
+  localStorage.setItem(`metas_${perfil}`, JSON.stringify(metas));
+  renderMetas();
+}
+
+function editMeta(i) { openMetaModal(i); }
+function addMeta() { openMetaModal(); }
 
 // ─── RELATÓRIO ────────────────────────────────────────────────────────────────
 async function renderRelatorio() {
@@ -648,44 +793,149 @@ async function renderRelatorio() {
 }
 
 // ─── MODAL ────────────────────────────────────────────────────────────────────
+// ─── MODAL LANÇAMENTO ─────────────────────────────────────────────────────────
+let tipoRecorrencia = 'unico';
+
 function openModal() {
-  document.getElementById('modalTitle').textContent=`Novo lançamento — ${currentMonth}`;
-  const today=new Date().toISOString().split('T')[0];
-  document.getElementById('fDataGasto').value=today;
-  document.getElementById('fDataPag').value=today;
-  document.getElementById('fDesc').value='';
-  document.getElementById('fValor').value='';
-  document.getElementById('fObs').value='';
+  document.getElementById('modalTitle').textContent = `Novo lançamento — ${currentMonth}`;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fDataGasto').value = today;
+  document.getElementById('fDataPag').value   = today;
+  document.getElementById('fDesc').value  = '';
+  document.getElementById('fValor').value = '';
+  document.getElementById('fObs').value   = '';
   updateCats();
+  setRecorrencia('unico');
+  // Preenche meses no select de início
+  const idx = MONTHS.indexOf(currentMonth);
+  document.getElementById('fRecMesInicio').innerHTML =
+    MONTHS.map((m,i) => `<option value="${i}" ${i===idx?'selected':''}>${m}</option>`).join('');
+  document.getElementById('fRespGroup').style.display = isConj() ? '' : 'none';
+  document.getElementById('fObsGroup').style.display  = isConj() ? '' : 'none';
   document.getElementById('modalOverlay').classList.add('open');
 }
-function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
-function updateCats(){const tipo=document.getElementById('fTipo').value;document.getElementById('fCat').innerHTML=(CATS()[tipo]||[]).map(c=>`<option>${c}</option>`).join('');}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+function updateCats() {
+  const tipo = document.getElementById('fTipo').value;
+  document.getElementById('fCat').innerHTML = (CATS()[tipo]||[]).map(c=>`<option>${c}</option>`).join('');
+}
+
+function setRecorrencia(tipo) {
+  tipoRecorrencia = tipo;
+  document.getElementById('btnUnico').classList.toggle('active', tipo==='unico');
+  document.getElementById('btnRec').classList.toggle('active',   tipo==='recorrente');
+  const opts = document.getElementById('recOpts');
+  opts.style.display = tipo==='recorrente' ? 'block' : 'none';
+  if (tipo==='recorrente') updateRecPreview();
+  const btn = document.getElementById('btnSave');
+  btn.textContent = tipo==='recorrente' ? 'Salvar em todos os meses' : 'Salvar no Notion';
+}
+
+function toggleMesFim() {
+  const dur = document.getElementById('fRecDuracao').value;
+  document.getElementById('fParcGroup').style.display = dur==='custom' ? 'block' : 'none';
+  updateRecPreview();
+}
+
+function updateRecPreview() {
+  const mesInicioIdx = parseInt(document.getElementById('fRecMesInicio').value);
+  const dur = document.getElementById('fRecDuracao').value;
+  let parcelas = dur==='0' ? MONTHS.length - mesInicioIdx :
+                 dur==='custom' ? parseInt(document.getElementById('fParcelas').value)||0 :
+                 parseInt(dur);
+  const mesesAfetados = MONTHS.slice(mesInicioIdx, mesInicioIdx + parcelas);
+  const preview = document.getElementById('recPreview');
+  if (!mesesAfetados.length) { preview.textContent=''; return; }
+  const ultimo = mesesAfetados[mesesAfetados.length-1];
+  preview.innerHTML = `📅 Será lançado em <strong>${mesesAfetados.length} mês(es)</strong>: ${mesesAfetados.join(', ')}${dur==='0'?' (e além)':''}`;
+}
+
+function getMesesRecorrencia() {
+  const mesInicioIdx = parseInt(document.getElementById('fRecMesInicio').value);
+  const dur = document.getElementById('fRecDuracao').value;
+  if (dur==='0') return MONTHS.slice(mesInicioIdx); // todos do mês em diante
+  const parcelas = dur==='custom'
+    ? parseInt(document.getElementById('fParcelas').value)||1
+    : parseInt(dur);
+  return MONTHS.slice(mesInicioIdx, mesInicioIdx + parcelas);
+}
+
+async function criarPagina(dbId, desc, valor, tipo, cat, dg, dp, resp, obs, parcAtual, parcTotal) {
+  const descFinal = parcTotal > 1 ? `${desc} (${parcAtual}/${parcTotal})` : desc;
+  const props = {
+    'Descrição': {title:[{text:{content:descFinal}}]},
+    'Valor':     {number:valor},
+    'Tipo':      {select:{name:tipo}},
+    'Categoria': {select:{name:cat}},
+  };
+  if (dg) props[isConj()?'Data Gasto':'Data Gasto '] = {date:{start:dg}};
+  if (dp) props['Data Pagamento'] = {date:{start:dp}};
+  if (isConj()&&resp) props['Responsável'] = {select:{name:resp}};
+  if (isConj()&&obs)  props['Observação']  = {rich_text:[{text:{content:obs}}]};
+  await notionPost('pages', {parent:{database_id:dbId}, properties:props});
+}
 
 async function salvar() {
-  const desc=document.getElementById('fDesc').value.trim();
-  const valor=parseFloat(document.getElementById('fValor').value);
-  const tipo=document.getElementById('fTipo').value;
-  const cat=document.getElementById('fCat').value;
-  const dg=document.getElementById('fDataGasto').value;
-  const dp=document.getElementById('fDataPag').value;
-  const resp=document.getElementById('fResp').value;
-  const obs=document.getElementById('fObs').value.trim();
-  if(!desc||!valor||!currentDbId) return;
-  const btn=document.getElementById('btnSave');
-  btn.disabled=true; btn.textContent='Salvando...';
-  const props={'Descrição':{title:[{text:{content:desc}}]},'Valor':{number:valor},'Tipo':{select:{name:tipo}},'Categoria':{select:{name:cat}}};
-  if(dg) props[isConj()?'Data Gasto':'Data Gasto ']={date:{start:dg}};
-  if(dp) props['Data Pagamento']={date:{start:dp}};
-  if(isConj()&&resp) props['Responsável']={select:{name:resp}};
-  if(isConj()&&obs)  props['Observação']={rich_text:[{text:{content:obs}}]};
-  try{
-    await notionPost('pages',{parent:{database_id:currentDbId},properties:props});
-    closeModal();
-    currentData=await fetchTransacoes(currentDbId);
-    renderDashboard(); renderTx();
-  }catch(e){alert('Erro ao salvar. Tente novamente.');}
-  btn.disabled=false; btn.textContent='Salvar no Notion';
+  const desc  = document.getElementById('fDesc').value.trim();
+  const valor = parseFloat(document.getElementById('fValor').value);
+  const tipo  = document.getElementById('fTipo').value;
+  const cat   = document.getElementById('fCat').value;
+  const dg    = document.getElementById('fDataGasto').value;
+  const dp    = document.getElementById('fDataPag').value;
+  const resp  = document.getElementById('fResp').value;
+  const obs   = document.getElementById('fObs').value.trim();
+  if (!desc || !valor) return;
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+
+  try {
+    if (tipoRecorrencia === 'unico') {
+      // Lançamento único no mês atual
+      btn.textContent = 'Salvando...';
+      if (!currentDbId) throw new Error('Database não encontrada');
+      await criarPagina(currentDbId, desc, valor, tipo, cat, dg, dp, resp, obs, 1, 1);
+      closeModal();
+      currentData = await fetchTransacoes(currentDbId);
+      renderDashboard(); renderTx();
+
+    } else {
+      // Lançamento recorrente em múltiplos meses
+      const meses = getMesesRecorrencia();
+      const total = meses.length;
+      const dur   = document.getElementById('fRecDuracao').value;
+      const comParcela = dur !== '0'; // sem prazo não numera parcelas
+
+      btn.textContent = `Salvando 0/${total}...`;
+      let erros = 0;
+
+      for (let i = 0; i < meses.length; i++) {
+        const mes = meses[i];
+        btn.textContent = `Salvando ${i+1}/${total}...`;
+        try {
+          const DB = isConj() ? DB_CONJUNTA : DB_PESSOAL;
+          const dbId = DB[mes];
+          if (!dbId || dbId.includes('_ID')) { erros++; continue; }
+          await criarPagina(dbId, desc, valor, tipo, cat, dg, dp, resp, obs, i+1, comParcela?total:1);
+        } catch { erros++; }
+      }
+
+      closeModal();
+      if (erros > 0) alert(`⚠️ ${erros} meses não foram salvos (database não configurada).`);
+      else alert(`✅ Lançado em ${total} meses com sucesso!`);
+
+      // Recarrega o mês atual
+      currentData = await fetchTransacoes(currentDbId);
+      renderDashboard(); renderTx();
+    }
+  } catch(e) {
+    alert('Erro ao salvar: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = tipoRecorrencia==='recorrente' ? 'Salvar em todos os meses' : 'Salvar no Notion';
 }
 </script>
 </body>

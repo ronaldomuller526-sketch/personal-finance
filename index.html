@@ -451,20 +451,48 @@ async function notionPost(path, body) {
   return r.json();
 }
 
+// IDs fixos dos databases (mais confiável que busca por nome)
+const DB_PESSOAL = {
+  'Janeiro':   'f8e74c88-0981-8353-b2a7-87717408ef65',
+  'Fevereiro': 'b5f74c88-0981-83d4-9f5c-07a522b1c72a',
+  'Março':     'ce874c88-0981-8285-ac0c-871e6a408ce1',
+  'Abril':     '17474c88-0981-82b2-b3f9-07b6b6f9be32',
+  'Maio':      'b8d74c88-0981-831a-b14e-07e708ff2f11',
+  'Junho':     '88a74c88-0981-828a-9f6b-07f9ddb15ea4',
+  'Julho':     '1c574c88-0981-83d4-9236-87cd2a3f69b9',
+  'Agosto':    'eda74c88-0981-8394-9c0b-074de6f64ce3',
+  'Setembro':  'e2174c88-0981-83e7-a2c3-87a5b8613c73',
+  'Outubro':   'a8574c88-0981-8356-aac1-0779c0ac6f4b',
+  'Novembro':  'a7e74c88-0981-8212-964e-078add29c82a',
+  'Dezembro':  '45674c88-0981-8334-9b60-07917b299cc0',
+};
+
 // ─── BUSCA AUTOMÁTICA DO MÊS ─────────────────────────────────────────────────
 async function findMonthDb(monthName) {
   const cacheKey = `${perfil}_${monthName}`;
   if (dbCache[cacheKey]) return dbCache[cacheKey];
 
-  const pageId = isConj() ? PAGE_CONJUNTA_2026 : PAGE_PESSOAL_2026;
-  const data = await notionGet(`blocks/${pageId}/children?page_size=50`);
-  for (const block of data.results || []) {
-    if (block.type === 'child_database') {
-      const title = block.child_database?.title || '';
-      const clean = title.replace(/\p{Emoji}/gu,'').trim().toLowerCase();
-      if (clean.includes(monthName.toLowerCase())) {
-        dbCache[cacheKey] = block.id;
-        return block.id;
+  // Pessoal: usa IDs fixos (databases inline não aparecem via blocks/children)
+  if (!isConj()) {
+    const id = DB_PESSOAL[monthName];
+    if (id) dbCache[cacheKey] = id;
+    return id || null;
+  }
+
+  // Conjunta: busca via search API pelo nome do mês
+  const data = await notionPost('search', {
+    query: monthName,
+    filter: { value: 'database', property: 'object' },
+    page_size: 20,
+  });
+  for (const db of data.results || []) {
+    const title = db.title?.[0]?.plain_text || '';
+    const clean = title.replace(/[^\w\sÀ-ú]/g,'').trim().toLowerCase();
+    if (clean.includes(monthName.toLowerCase())) {
+      // Verifica se é filha da página conjunta 2026
+      if (db.parent?.page_id?.replace(/-/g,'') === PAGE_CONJUNTA_2026.replace(/-/g,'')) {
+        dbCache[cacheKey] = db.id;
+        return db.id;
       }
     }
   }

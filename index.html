@@ -672,6 +672,7 @@ tr:last-child td { border-bottom: none; }
 const API = '/api/notion';
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
+// IDs de página — usados para lançar novos registros
 const DB_PESSOAL = {
   'Janeiro':  '40974c88-0981-8268-a8d9-8175b1bc4427',
   'Fevereiro':'70b74c88-0981-835f-b041-01f03f6a0107',
@@ -685,6 +686,22 @@ const DB_PESSOAL = {
   'Outubro':  '93174c88-0981-8337-b47c-810bf61526fb',
   'Novembro': 'd9d74c88-0981-8291-b2db-811371c75f95',
   'Dezembro': '1ca74c88-0981-82e1-9111-81e902e74f2e',
+};
+
+// IDs de collection — usados para consultar/buscar dados
+const DB_PESSOAL_QUERY = {
+  'Janeiro':  'f8e74c88-0981-8353-b2a7-87717408ef65',
+  'Fevereiro':'b5f74c88-0981-83d4-9f5c-07a522b1c72a',
+  'Março':    'ce874c88-0981-8285-ac0c-871e6a408ce1',
+  'Abril':    '17474c88-0981-82b2-b3f9-07b6b6f9be32',
+  'Maio':     'b8d74c88-0981-831a-b14e-07e708ff2f11',
+  'Junho':    '88a74c88-0981-828a-9f6b-07f9ddb15ea4',
+  'Julho':    '1c574c88-0981-83d4-9236-87cd2a3f69b9',
+  'Agosto':   'eda74c88-0981-8394-9c0b-074de6f64ce3',
+  'Setembro': 'e2174c88-0981-83e7-a2c3-87a5b8613c73',
+  'Outubro':  'a8574c88-0981-8356-aac1-0779c0ac6f4b',
+  'Novembro': 'a7e74c88-0981-8212-964e-078add29c82a',
+  'Dezembro': '45674c88-0981-8334-9b60-07917b299cc0',
 };
 
 const DB_METAS = {
@@ -758,7 +775,10 @@ async function notionPost(path, body) {
   const r = await fetch(`${API}?path=${encodeURIComponent(path)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); return r.json();
 }
 
-async function findMonthDb(month) {
+async function findMonthDb(month, forQuery = false) {
+  if (!isConj() && forQuery) {
+    return DB_PESSOAL_QUERY[month] || null;
+  }
   const db = isConj() ? DB_CONJUNTA : DB_PESSOAL;
   return db[month] || null;
 }
@@ -827,7 +847,7 @@ async function loadDashboardAnual() {
   allYearData = [];
   for (const m of MONTHS) {
     try {
-      const id = await findMonthDb(m, 2026);
+      const id = await findMonthDb(m, true); // true = usar collection IDs para query
       if (!id) continue;
       const data = await fetchTransacoes(id);
       allYearData.push(...data);
@@ -856,8 +876,8 @@ function switchTab(tabName, el) {
 
 // ─── LOAD MÊS ─────────────────────────────────────────────────────────────────
 async function loadMonth(month) {
-  currentDbId = await findMonthDb(month);
-  if (!currentDbId || currentDbId.includes('_ID')) {
+  currentDbId = await findMonthDb(month, true); // true = usar collection IDs para query
+  if (!currentDbId) {
     document.getElementById('txTable').innerHTML = '<div class="empty">Database não encontrada para este mês.</div>';
     return;
   }
@@ -1494,8 +1514,10 @@ async function salvar() {
     if (tipoRecorrencia === 'unico') {
       // Lançamento único no mês atual
       btn.textContent = 'Salvando...';
-      if (!currentDbId) throw new Error('Database não encontrada');
-      await criarPagina(currentDbId, desc, valor, tipo, cat, dg, dp, resp, obs, 1, 1);
+      // Para lançar usa page ID (não collection ID)
+      const dbIdLancar = isConj() ? DB_CONJUNTA[currentMonth] : DB_PESSOAL[currentMonth];
+      if (!dbIdLancar) throw new Error('Database não encontrada');
+      await criarPagina(dbIdLancar, desc, valor, tipo, cat, dg, dp, resp, obs, 1, 1);
       closeModal();
       currentData = await fetchTransacoes(currentDbId);
       renderDashboard(); renderTx();

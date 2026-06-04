@@ -1008,19 +1008,25 @@ function renderTx() {
     return;
   }
 
+  const fmtDate = s => s ? new Date(s+'T00:00:00').toLocaleDateString('pt-BR') : '-';
+
   const rows = data.map(d => {
     const grupo = GRUPO()[d.cat] || 'azul';
     const vcls  = d.tipo==='Receita' ? 'val-pos' : d.tipo==='Investimento' ? 'val-inv' : 'val-neg';
     const sinal = d.tipo==='Receita' ? '+' : '-';
-    const ds    = d.dataGasto ? new Date(d.dataGasto+'T00:00:00').toLocaleDateString('pt-BR')
-                : d.dataPag   ? new Date(d.dataPag+'T00:00:00').toLocaleDateString('pt-BR') : '-';
-    const rcls  = d.responsavel==='Ronaldo' ? 'badge-ronaldo' : d.responsavel==='Nathália' ? 'badge-nathalia' : 'badge-casal';
-    // Highlight de busca
-    const descHL = busca
+    const dsGasto = fmtDate(d.dataGasto);
+    const dsPag   = fmtDate(d.dataPag);
+    // Se as duas datas forem iguais ou uma estiver vazia, mostra só uma
+    const mesmaDt = d.dataGasto && d.dataPag && d.dataGasto === d.dataPag;
+    const rcls    = d.responsavel==='Ronaldo' ? 'badge-ronaldo' : d.responsavel==='Nathália' ? 'badge-nathalia' : 'badge-casal';
+    const descHL  = busca
       ? d.desc.replace(new RegExp(`(${busca})`, 'gi'), '<mark style="background:#FFF3CD;border-radius:2px">$1</mark>')
       : d.desc;
     return `<tr>
-      <td>${ds}</td>
+      <td>
+        <div style="font-size:.8rem;font-weight:500">${dsGasto}</div>
+        ${!mesmaDt && d.dataPag ? `<div style="font-size:.72rem;color:var(--text-muted)">pag. ${dsPag}</div>` : ''}
+      </td>
       <td style="font-weight:600">${descHL||'-'}</td>
       <td><span class="badge badge-${grupo}">${d.cat||'-'}</span></td>
       ${isConj()?`<td>${d.responsavel?`<span class="badge ${rcls}">${d.responsavel}</span>`:''}</td>`:''}
@@ -1034,7 +1040,7 @@ function renderTx() {
   document.getElementById('txTable').innerHTML = `
     <table>
       <thead><tr>
-        <th>Data</th><th>Descrição</th><th>Categoria</th>
+        <th>Data gasto · Pagamento</th><th>Descrição</th><th>Categoria</th>
         ${isConj()?'<th>Responsável</th>':''}
         <th style="text-align:right">Valor</th>
         <th style="text-align:center">Ação</th>

@@ -673,12 +673,18 @@ const API = '/api/notion';
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 const DB_PESSOAL = {
-  'Janeiro':'40974c88-0981-8268-a8d9-8175b1bc4427','Fevereiro':'70b74c88-0981-835f-b041-01f03f6a0107',
-  'Março':'51c74c88-0981-8385-bb62-01c09acff352','Abril':'1cf74c88-0981-8282-9a8a-011733cb9395',
-  'Maio':'1c474c88-0981-8394-b3d7-81f84ff5548f','Junho':'49874c88-0981-8240-b48b-016796c40532',
-  'Julho':'2c574c88-0981-8225-9caf-0148cd86419c','Agosto':'6d074c88-0981-83ef-9ea4-017182fa6c12',
-  'Setembro':'fd674c88-0981-8251-8498-8106d627af45','Outubro':'93174c88-0981-8337-b47c-810bf61526fb',
-  'Novembro':'d9d74c88-0981-8291-b2db-811371c75f95','Dezembro':'1ca74c88-0981-82e1-9111-81e902e74f2e',
+  'Janeiro':  'f8e74c88-0981-8353-b2a7-87717408ef65',
+  'Fevereiro':'b5f74c88-0981-83d4-9f5c-07a522b1c72a',
+  'Março':    'ce874c88-0981-8285-ac0c-871e6a408ce1',
+  'Abril':    '17474c88-0981-82b2-b3f9-07b6b6f9be32',
+  'Maio':     'b8d74c88-0981-831a-b14e-07e708ff2f11',
+  'Junho':    '88a74c88-0981-828a-9f6b-07f9ddb15ea4',
+  'Julho':    '1c574c88-0981-83d4-9236-87cd2a3f69b9',
+  'Agosto':   'eda74c88-0981-8394-9c0b-074de6f64ce3',
+  'Setembro': 'e2174c88-0981-83e7-a2c3-87a5b8613c73',
+  'Outubro':  'a8574c88-0981-8356-aac1-0779c0ac6f4b',
+  'Novembro': 'a7e74c88-0981-8212-964e-078add29c82a',
+  'Dezembro': '45674c88-0981-8334-9b60-07917b299cc0',
 };
 
 const DB_METAS = {
@@ -819,11 +825,10 @@ async function loadDashboardAnual() {
   document.getElementById('respBreakdown').innerHTML = '';
 
   allYearData = [];
-  const DB = isConj() ? DB_CONJUNTA : DB_PESSOAL;
   for (const m of MONTHS) {
     try {
-      const id = DB[m];
-      if (!id || id.includes('_ID')) continue;
+      const id = await findMonthDb(m, 2026);
+      if (!id) continue;
       const data = await fetchTransacoes(id);
       allYearData.push(...data);
     } catch {}

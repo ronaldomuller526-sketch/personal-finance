@@ -937,20 +937,28 @@ function renderDashboard() {
       <div class="sub">${saldo>=0?'Positivo':'Negativo'}</div>
     </div>`;
   const catTotais={};
-  currentData.filter(d=>d.tipo==='Despesa').forEach(d=>{catTotais[d.cat]=(catTotais[d.cat]||0)+d.valor});
+  // Apenas despesas COM categoria preenchida
+  currentData.filter(d=>d.tipo==='Despesa'&&d.cat).forEach(d=>{catTotais[d.cat]=(catTotais[d.cat]||0)+d.valor});
   const maxCat=Math.max(...Object.values(catTotais),1);
   const catHTML=Object.entries(catTotais).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
-    <div class="cat-row"><div class="cat-dot" style="background:${CAT_COLORS[cat]||'#888'}"></div><span class="cat-name">${cat}</span>
-    <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(val/maxCat*100).toFixed(0)}%;background:${CAT_COLORS[cat]||'#888'}"></div></div>
+    <div class="cat-row"><div class="cat-dot" style="background:${CAT_COLORS[cat]||'#aaa'}"></div><span class="cat-name">${cat}</span>
+    <div class="cat-bar-wrap"><div class="cat-bar" style="width:${(val/maxCat*100).toFixed(0)}%;background:${CAT_COLORS[cat]||'#aaa'}"></div></div>
     <span class="cat-val">${fmt(val)}</span></div>`).join('')||'<div class="empty">Nenhuma saída registrada</div>';
+  // Grupos para pizza: só despesas com categoria
   const gr={azul:0,vermelho:0,verde:0,cinza:0};
-  currentData.filter(d=>d.tipo==='Despesa').forEach(d=>{const g=GRUPO()[d.cat];if(g)gr[g]+=d.valor});
+  currentData.filter(d=>d.tipo==='Despesa'&&d.cat).forEach(d=>{const g=GRUPO()[d.cat];if(g)gr[g]+=d.valor});
+  // Investimentos separados
+  const totalInvest = currentData.filter(d=>d.tipo==='Investimento').reduce((s,d)=>s+d.valor,0);
   document.getElementById('chartsArea').innerHTML = `
     <div class="chart-card"><div class="chart-header"><span class="chart-title">Saídas por categoria</span><span class="chart-sub">${fmt(saidas)} total</span></div><div class="cat-list">${catHTML}</div></div>
     <div class="chart-card"><div class="chart-header"><span class="chart-title">Distribuição por grupo</span></div>
     <div style="position:relative;height:200px"><canvas id="pieChart" role="img" aria-label="Distribuição"></canvas></div>
-    <div class="legend"><span class="legend-item"><span class="legend-dot" style="background:#378ADD"></span>Essencial ${fmt(gr.azul)}</span><span class="legend-item"><span class="legend-dot" style="background:#E24B4A"></span>Discricionário ${fmt(gr.vermelho)}</span><span class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>Renda ${fmt(gr.verde)}</span></div></div>`;
-  new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:['Essencial','Discricionário','Renda'],datasets:[{data:[gr.azul,gr.vermelho,gr.verde],backgroundColor:['#378ADD','#E24B4A','#1D9E75'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#378ADD"></span>Essencial ${fmt(gr.azul)}</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#E24B4A"></span>Discricionário ${fmt(gr.vermelho)}</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#185FA5"></span>Investimentos ${fmt(totalInvest)}</span>
+    </div></div>`;
+  new Chart(document.getElementById('pieChart'),{type:'doughnut',data:{labels:['Essencial','Discricionário','Investimentos'],datasets:[{data:[gr.azul,gr.vermelho,totalInvest],backgroundColor:['#378ADD','#E24B4A','#185FA5'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
   const rb=document.getElementById('respBreakdown');
   if(isConj()){
     rb.innerHTML=`<div class="chart-card" style="margin-top:1rem"><div class="chart-header"><span class="chart-title">Por responsável</span></div>

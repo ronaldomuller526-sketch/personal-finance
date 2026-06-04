@@ -1418,26 +1418,34 @@ function toggleMesFim() {
 }
 
 function updateRecPreview() {
-  const mesInicioIdx = parseInt(document.getElementById('fRecMesInicio').value);
-  const dur = document.getElementById('fRecDuracao').value;
-  let parcelas = dur==='0' ? MONTHS.length - mesInicioIdx :
-                 dur==='custom' ? parseInt(document.getElementById('fParcelas').value)||0 :
-                 parseInt(dur);
-  const mesesAfetados = MONTHS.slice(mesInicioIdx, mesInicioIdx + parcelas);
+  const meses = getMesesRecorrencia();
   const preview = document.getElementById('recPreview');
-  if (!mesesAfetados.length) { preview.textContent=''; return; }
-  const ultimo = mesesAfetados[mesesAfetados.length-1];
-  preview.innerHTML = `📅 Será lançado em <strong>${mesesAfetados.length} mês(es)</strong>: ${mesesAfetados.join(', ')}${dur==='0'?' (e além)':''}`;
+  if (!meses.length) { preview.textContent=''; return; }
+  const nomes = meses.map(m => m.mes.substring(0,3) + '/' + m.ano);
+  const dur = document.getElementById('fRecDuracao').value;
+  preview.innerHTML = '📅 Será lançado em <strong>' + meses.length + ' mês(es)</strong>: ' + nomes.join(', ') + (dur==='0'?' (2 anos)':'');
 }
 
 function getMesesRecorrencia() {
+  // Retorna array de {mes, ano, globalIndex}
   const mesInicioIdx = parseInt(document.getElementById('fRecMesInicio').value);
+  const anoInicio = 2026; // sempre começa em 2026
+  const globalInicio = mesInicioIdx; // índice global a partir de Jan2026=0
+
   const dur = document.getElementById('fRecDuracao').value;
-  if (dur==='0') return MONTHS.slice(mesInicioIdx); // todos do mês em diante
-  const parcelas = dur==='custom'
-    ? parseInt(document.getElementById('fParcelas').value)||1
-    : parseInt(dur);
-  return MONTHS.slice(mesInicioIdx, mesInicioIdx + parcelas);
+  let parcelas;
+  if (dur === '0') parcelas = 24; // sem prazo: 2 anos (2026+2027)
+  else if (dur === 'custom') parcelas = parseInt(document.getElementById('fParcelas').value)||1;
+  else parcelas = parseInt(dur);
+
+  const result = [];
+  for (let i = 0; i < parcelas; i++) {
+    const gi = globalInicio + i;
+    const ano = 2026 + Math.floor(gi / 12);
+    const mes = MONTHS[gi % 12];
+    result.push({ mes, ano, gi });
+  }
+  return result;
 }
 
 async function criarPagina(dbId, desc, valor, tipo, cat, dg, dp, resp, obs, parcAtual, parcTotal) {
@@ -1490,12 +1498,11 @@ async function salvar() {
       let erros = 0;
 
       for (let i = 0; i < meses.length; i++) {
-        const mes = meses[i];
-        btn.textContent = `Salvando ${i+1}/${total}...`;
+        const { mes, ano } = meses[i];
+        btn.textContent = 'Salvando ' + (i+1) + '/' + total + '...';
         try {
-          const DB = isConj() ? DB_CONJUNTA : DB_PESSOAL;
-          const dbId = DB[mes];
-          if (!dbId || dbId.includes('_ID')) { erros++; continue; }
+          const dbId = await findMonthDb(mes, ano);
+          if (!dbId) { erros++; continue; }
           await criarPagina(dbId, desc, valor, tipo, cat, dg, dp, resp, obs, i+1, comParcela?total:1);
         } catch { erros++; }
       }
